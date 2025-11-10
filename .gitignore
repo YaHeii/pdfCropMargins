@@ -42,3 +42,4 @@ pip-delete-this-directory.txt
 # Mypy type-checker cache.
 .mypy_cache
 
+.vscode/settings.json
