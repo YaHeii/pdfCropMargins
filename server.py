@@ -60,7 +60,7 @@ async def crop_pdf_endpoint(file: UploadFile = File(...)):
 
 @app.get("/")
 def read_root():
-    # 我们可以顺便提供一个超简单的 HTML 前端
+    # 一个超简单的 HTML 前端
     html_content = """
     <html>
         <head><title>PDF Cropper</title></head>

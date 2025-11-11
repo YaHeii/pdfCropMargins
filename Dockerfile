@@ -12,8 +12,6 @@ RUN apt-get update \
 WORKDIR /app
 
 # 4. 复制并安装 Python 依赖
-# 我们假设 pdfCropMargins 的 setup.py 在上一级目录
-# 如果你没有克隆源码，而是直接 pip install，可以跳过 COPY . .
 COPY . .
 
 # 安装 pdfCropMargins 自身及其依赖 (scipy, numpy, pymupdf...)
@@ -29,7 +27,5 @@ RUN pip install fastapi "uvicorn[standard]" python-multipart
 EXPOSE 8000
 
 # 6. 运行 API 服务器
-# CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
-# 注意：server.py 需要和 Dockerfile 在同一级，或者调整 COPY 路径
 COPY server.py .
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
