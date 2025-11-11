@@ -3,7 +3,7 @@
 
 a = Analysis(
     ['run.py'],
-    pathex=[],
+    pathex=['src'],
     binaries=[],
     datas=[
         ('C:\\Program Files\\gs\\gs10.06.0\\bin', 'ghostscript/bin'),

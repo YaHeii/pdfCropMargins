@@ -3,9 +3,8 @@ import shutil
 import tempfile
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
-
+# docker 环境下配置文件
 # 导入 pdfCropMargins 的核心逻辑
-# 假设你已经 'pip install .' 安装了它，或者将其源码放在同级目录
 try:
     from pdfCropMargins.pdfCropMargins import main as pdfCropMargins_main
 except ImportError:

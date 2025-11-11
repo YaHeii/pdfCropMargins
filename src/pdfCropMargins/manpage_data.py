@@ -257,9 +257,10 @@ else:
         description=description, epilog=epilog,
         prog="pdfcropmargins")
 
-cmd_parser.add_argument("pdf_input_doc", nargs="+", metavar="PDF_FILE", help="""
+cmd_parser.add_argument("pdf_input_doc", nargs="*", default=None, metavar="PDF_FILE", help="""
 
-   The pathname of the PDF file to crop.  Use quotes around any file or
+   The pathname of the PDF file to crop. Optional if --gui is used.
+   Use quotes around any file or
    directory name which contains a space.  If no filename is given for the
    cropped PDF output file via the '-o' flag then a default output filename
    will be generated.  By default it is the same as the source filename except
@@ -947,4 +948,3 @@ cmd_parser.add_argument("-wcdf", "--writeCropDataToFile", type=str,
    Write out the calculated list of crops to the file with the file pathname
    that is passed in and exit.  Mostly used for automated testing and
    debugging.^^n""")
-

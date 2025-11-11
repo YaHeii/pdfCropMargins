@@ -662,7 +662,7 @@ def process_command_line_arguments(parsed_args, cmd_parser):
         print("System type:", ex.system_os)
         print(fitz.__doc__) # Print out PyMuPDF version info.
 
-    if len(args.pdf_input_doc) > 1:
+    if args.pdf_input_doc and len(args.pdf_input_doc) > 1:
         print("\nError in pdfCropMargins: Only one input PDF document is allowed."
               "\nFound more than one on the command line:", file=sys.stderr)
         for f in args.pdf_input_doc:
@@ -685,39 +685,50 @@ def process_command_line_arguments(parsed_args, cmd_parser):
     # Process input and output filenames.
     #
 
-    input_doc_path = args.pdf_input_doc[0]
-    input_doc_path = ex.get_expanded_path(input_doc_path) # Expand vars and user.
-    input_doc_path = ex.glob_pathname(input_doc_path, exact_num_args=1)[0]
-    if not input_doc_path.endswith((".pdf",".PDF")):
-        print("\nWarning in pdfCropMargins: The file extension is neither '.pdf'"
-              "\nnor '.PDF'; continuing anyway.", file=sys.stderr)
-    if args.verbose:
-        print("\nThe input document's filename is:\n   ", input_doc_path)
-    if not os.path.isfile(input_doc_path):
-        print("\nError in pdfCropMargins: The specified input file\n   "
-              + input_doc_path + "\nis not a file or does not exist.",
-              file=sys.stderr)
-        ex.cleanup_and_exit(1)
+    input_doc_path = args.pdf_input_doc
+    input_doc_path = None
+    output_doc_path = None
+    fixed_input_doc_pathname = None
 
-    if not args.outfile and args.verbose:
-        print("\nUsing the default-generated output filename.")
+    if args.pdf_input_doc:
+        # 如果列表不是空的 (即提供了文件)，取第一个文件
+        input_doc_path = args.pdf_input_doc[0]
+        input_doc_path = ex.get_expanded_path(input_doc_path) # Expand vars and user.
+        input_doc_path = ex.glob_pathname(input_doc_path, exact_num_args=1)[0]
+        if not input_doc_path.endswith((".pdf",".PDF")):
+            print("\nWarning in pdfCropMargins: The file extension is neither '.pdf'"
+                "\nnor '.PDF'; continuing anyway.", file=sys.stderr)
+        if args.verbose:
+            print("\nThe input document's filename is:\n   ", input_doc_path)
 
-    output_doc_path = generate_output_filepath(input_doc_path)
-    if args.verbose:
-        print("\nThe output document's filename will be:\n   ", output_doc_path)
+        # because cancel the input file so have to move it into here
+        if not os.path.isfile(input_doc_path):
+                    print("\nError in pdfCropMargins: The specified input file\n   "
+                        + input_doc_path + "\nis not a file or does not exist.",
+                        file=sys.stderr)
+                    ex.cleanup_and_exit(1)
 
-    if os.path.lexists(output_doc_path) and args.noclobber:
-        # Note lexists above, don't overwrite broken symbolic links, either.
-        print("\nOption '--noclobber' is set, refusing to overwrite an existing"
-              "\nfile with filename:\n   ", output_doc_path, file=sys.stderr)
-        ex.cleanup_and_exit(1)
+        if not args.outfile and args.verbose:
+            print("\nUsing the default-generated output filename.")
 
-    if os.path.lexists(output_doc_path) and ex.samefile(input_doc_path,
-                                                                output_doc_path):
-        print("\nError in pdfCropMargins: The input file is the same as"
-              "\nthe output file.\n", file=sys.stderr)
-        ex.cleanup_and_exit(1)
+        output_doc_path = generate_output_filepath(input_doc_path)
+        if args.verbose:
+            print("\nThe output document's filename will be:\n   ", output_doc_path)
 
+        if os.path.lexists(output_doc_path) and args.noclobber:
+            # Note lexists above, don't overwrite broken symbolic links, either.
+            print("\nOption '--noclobber' is set, refusing to overwrite an existing"
+                "\nfile with filename:\n   ", output_doc_path, file=sys.stderr)
+            ex.cleanup_and_exit(1)
+
+        if output_doc_path and os.path.lexists(output_doc_path) and ex.samefile(input_doc_path,
+                                                                    output_doc_path):
+            print("\nError in pdfCropMargins: The input file is the same as"
+                "\nthe output file.\n", file=sys.stderr)
+            ex.cleanup_and_exit(1)
+    # else:
+    #     # 如果列表是空的 (即没有提供文件)，则设为 None
+    #     input_doc_path = None
     #
     # Process some args with both regular and per-page 4-param forms.  Note that
     # in all these cases the 4-param version takes precedence.
@@ -816,6 +827,8 @@ def process_command_line_arguments(parsed_args, cmd_parser):
 
     # If the option settings require pdftoppm, make sure we have a running version.
     gs_render_fallback_set = False # Set True if we switch to gs option as a fallback.
+    found_gs = False
+    
     if args.calcbb in ["p", "o"]:
         # Note that after this block, the `--calcbb o` option is converted to 'p' or 'gr'.
         found_pdftoppm = ex.init_and_test_pdftoppm_executable()
@@ -876,12 +889,13 @@ def process_command_line_arguments(parsed_args, cmd_parser):
               "\nwhen the '--calcbb gb' or '--gsBbox' option is also selected.\n",
               file=sys.stderr)
 
-    if args.gsFix:
-        if args.verbose:
-            print("\nAttempting to fix the PDF input file before reading it...")
-        fixed_input_doc_pathname = ex.fix_pdf_with_ghostscript_to_tmp_file(input_doc_path)
-    else:
-        fixed_input_doc_pathname = input_doc_path
+    if input_doc_path:
+        if args.gsFix:
+            if args.verbose:
+                print("\nAttempting to fix the PDF input file before reading it...")
+            fixed_input_doc_pathname = ex.fix_pdf_with_ghostscript_to_tmp_file(input_doc_path)
+        else:
+            fixed_input_doc_pathname = input_doc_path
 
     return input_doc_path, fixed_input_doc_pathname, output_doc_path
 
@@ -1217,7 +1231,13 @@ def main_crop(argv_list=None):
                                                                           cmd_parser))
 
     if args.gui:
-        from .gui import create_gui # Import here; tkinter might not be installed.
+        from .gui import create_gui, get_filename # Import here; tkinter might not be installed.
+        if not input_doc_pathname:
+            input_doc_pathname = get_filename()
+            if not input_doc_pathname:
+                return None
+            fixed_input_doc_pathname = input_doc_pathname
+            output_doc_pathname = generate_output_filepath(input_doc_pathname)
         if args.verbose:
             print("\nWaiting for the GUI...")
 
